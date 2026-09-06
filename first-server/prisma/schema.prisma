@@ -1,0 +1,90 @@
+// ── Generator ─Tells Prisma to generate a JavaScript client.
+generator client {
+    provider = "prisma-client-js"
+}
+
+// ── Database connection --Tells Prisma which database to connect to and where.
+datasource db {
+    provider = "postgresql"
+}
+
+//These are your tables. Each model = one table in PostgreSQL. Each field inside = one column.
+// ── User table---Customers AND cab owners — one table, role field separates them.
+model User {
+    id                  Int      @id @default(autoincrement())
+    name                String
+    email               String   @unique
+    password            String
+    phone               String?
+    role                String
+    cabs                Cab[]
+    bookings            Booking[]        @relation("CustomerBookings")  // ← add this
+    sendContacts        ContactRequest[] @relation("CustomerContacts")
+    receivedContacts    ContactRequest[] @relation("OwnerContacts")
+    review              Review[]
+    createdAt           DateTime @default(now())
+}
+
+// ── CAB ── listed by an owner
+model Cab {
+    id          Int         @id @default(autoincrement())
+    name        String  
+    type        String    
+    capacity    Int 
+    pricePerKm  Float    
+    location    String           
+    isAvailable Boolean     @default(true)  
+    imageUrl    String?
+    owner       User        @relation(fields: [ownerId], references: [id])
+    ownerId     Int
+    bookings    Booking[]
+    contacts    ContactRequest[]
+    reviews     Review[]
+    createdAt   DateTime @default(now())
+}
+
+// ── BOOKING ── customer books a cab
+model Booking {
+  id           Int      @id @default(autoincrement())
+  fromLocation String
+  toLocation   String
+  journeyDate  DateTime
+  returnDate   DateTime                          // ← add this
+  status       String   @default("pending")
+  totalPrice   Float?
+  customerId   Int
+  cabId        Int
+  customer     User     @relation("CustomerBookings", fields: [customerId], references: [id])
+  cab          Cab      @relation(fields: [cabId], references: [id])
+  review       Review?
+  createdAt    DateTime @default(now())
+}
+
+// ── CONTACT REQUEST ── core feature of Deshmukh Travels
+model ContactRequest {
+  id          Int      @id @default(autoincrement())
+  message     String
+  tripDetails String?
+  status      String   @default("pending")
+  customer    User     @relation("CustomerContacts", fields: [customerId], references: [id])
+  customerId  Int
+  owner       User     @relation("OwnerContacts", fields: [ownerId], references: [id])
+  ownerId     Int
+  cab         Cab      @relation(fields: [cabId], references: [id])
+  cabId       Int
+  createdAt   DateTime @default(now())
+}
+
+// ── REVIEW ── after a completed trip
+model Review {
+  id         Int      @id @default(autoincrement())
+  rating     Int                // 1–5
+  comment    String?
+  customer   User     @relation(fields: [customerId], references: [id])
+  customerId Int
+  cab        Cab      @relation(fields: [cabId], references: [id])
+  cabId      Int
+  booking    Booking  @relation(fields: [bookingId], references: [id])
+  bookingId  Int      @unique       // one review per booking
+  createdAt  DateTime @default(now())
+}
