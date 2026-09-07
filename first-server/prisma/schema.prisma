@@ -7,10 +7,6 @@ generator client {
 datasource db {
     provider = "postgresql"
 }
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
 
 //These are your tables. Each model = one table in PostgreSQL. Each field inside = one column.
 // ── User table---Customers AND cab owners — one table, role field separates them.
