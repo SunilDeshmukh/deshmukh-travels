@@ -1,5 +1,0 @@
-[build]
-builder = "railpack"
-
-[deploy]
-startCommand = "npx prisma migrate deploy && node src/server.js"
