@@ -1,7 +1,7 @@
 {
   "name": "deshmukh-travels-monorepo",
   "scripts": {
-    "build": "cd first-server && npm install ",
-    "start": "cd first-server && npx prisma migrate deploy && node src/server.js"
+    "build": "cd first-server && npm install",
+    "start": "cd first-server && node src/server.js"
   }
 }
