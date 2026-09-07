@@ -5,6 +5,9 @@ generator client {
 
 // ── Database connection --Tells Prisma which database to connect to and where.
 datasource db {
+    provider = "postgresql"
+}
+datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
