@@ -5,7 +5,8 @@ generator client {
 
 // ── Database connection --Tells Prisma which database to connect to and where.
 datasource db {
-    provider = "postgresql"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 //These are your tables. Each model = one table in PostgreSQL. Each field inside = one column.
