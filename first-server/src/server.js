@@ -11,7 +11,13 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Step 3: Register middleware (in order!)
-app.use(cors());
+app.use(cors({
+  origin: [
+    'https://deshmukh-travels.vercel.app',
+    'http://localhost:5173',
+  ],
+  credentials: true,
+}));
 app.use(express.json());
 app.use(helmet());          // adds 14 security headers automatically
 app.set('trust proxy', 1); // trust first proxy — Railway, Vercel, Nginx etc.
