@@ -15,8 +15,8 @@ export default function LoginPage() {
     if (!email || !password) return setError('Both fields are required');
     setLoading(true); setError('');
     try {
-      const { user } = await login(email, password);
-      navigate(user.role === 'owner' ? '/dashboard' : '/');
+      const { user: loggedInUser } = await login(email, password);
+      navigate(loggedInUser.role === 'owner' ? '/dashboard' : '/');
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
     } finally {

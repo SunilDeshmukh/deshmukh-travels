@@ -25,8 +25,8 @@ export default function RegisterPage() {
     if (err) return setError(err);
     setLoading(true); setError('');
     try {
-      const { user } = await register(name, email, password, role);
-      navigate(user.role === 'owner' ? '/dashboard' : '/');
+      const { user: registeredUser } = await register(name, email, password, role);
+      navigate(registeredUser.role === 'owner' ? '/dashboard' : '/');
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed');
     } finally {
