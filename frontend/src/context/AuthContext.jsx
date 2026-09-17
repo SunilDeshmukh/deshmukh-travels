@@ -29,7 +29,7 @@ export function AuthProvider({ children }) {
     const { data } = await api.post('/auth/login', { email, password });
     localStorage.setItem('token', data.data.token);
     localStorage.setItem('user',  JSON.stringify(data.data.user));
-    setUser(data.user);
+    setUser(data.data.user);
     return data.data;
   };
 
