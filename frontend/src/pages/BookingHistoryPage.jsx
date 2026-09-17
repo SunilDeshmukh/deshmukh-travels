@@ -26,7 +26,7 @@ export default function BookingHistoryPage() {
     if (!user)                    return navigate('/login');
     if (user.role !== 'customer') return navigate('/');
     api.get('/bookings/my')
-      .then(res  => setBookings(res.data))
+      .then(res  => setBookings(res.data.data))
       .catch(()  => {})
       .finally(() => setLoading(false));
   }, [user, navigate]);

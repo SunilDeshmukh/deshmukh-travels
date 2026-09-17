@@ -18,7 +18,7 @@ export default function CabDetailPage() {
 
   useEffect(() => {
     api.get(`/cabs/${id}`)
-      .then(res  => setCab(res.data))
+      .then(res  => setCab(res.data.data))
       .catch(()  => setError('Cab not found'))
       .finally(() => setLoading(false));
   }, [id]);

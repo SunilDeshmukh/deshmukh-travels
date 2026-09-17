@@ -8,7 +8,7 @@ export default function UsersPage() {
 
   useEffect(() => {
     userService.getAll()
-      .then(res => setUsers(res.data))
+      .then(res => setUsers(res.data.data))
       .catch(()  => setError('Failed to load users'))
       .finally(() => setLoading(false));
   }, []);

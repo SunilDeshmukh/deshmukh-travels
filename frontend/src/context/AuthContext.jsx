@@ -19,18 +19,18 @@ export function AuthProvider({ children }) {
 
   const register = async (name, email, password, role, phone) => {
     const { data } = await api.post('/auth/register', { name, email, password, role, phone });
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('user',  JSON.stringify(data.user));
-    setUser(data.user);
-    return data;
+    localStorage.setItem('token', data.data.token);
+    localStorage.setItem('user',  JSON.stringify(data.data.user));
+    setUser(data.data.user);
+    return data.data;
   };
 
   const login = async (email, password) => {
     const { data } = await api.post('/auth/login', { email, password });
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('user',  JSON.stringify(data.user));
+    localStorage.setItem('token', data.data.token);
+    localStorage.setItem('user',  JSON.stringify(data.data.user));
     setUser(data.user);
-    return data;
+    return data.data;
   };
 
   const logout = () => {

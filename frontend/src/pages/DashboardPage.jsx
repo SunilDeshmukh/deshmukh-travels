@@ -22,11 +22,11 @@ export default function DashboardPage() {
     if (user.role !== 'owner') return navigate('/');
     api.get('/cabs/my/listings')
       .then(async (res) => {
-        const ownerCabs = res.data;
+        const ownerCabs = res.data.data;
         setCabs(ownerCabs);
         const results = await Promise.all(
           ownerCabs.map(cab =>
-            api.get(`/bookings/cab/${cab.id}`).then(r => r.data).catch(() => [])
+            api.get(`/bookings/cab/${cab.id}`).then(r => r.data.data).catch(() => [])
           )
         );
         setBookings(results.flat());
@@ -49,7 +49,7 @@ export default function DashboardPage() {
       const { data } = await api.post('/cabs', {
         ...form, capacity: +form.capacity, pricePerKm: +form.pricePerKm, ownerId: user.id,
       });
-      setCabs(prev => [data, ...prev]);
+      setCabs(prev => [data.data, ...prev]);
       setForm({ name:'', type:'', capacity:'', pricePerKm:'', location:'', imageUrl:'' });
       setShowForm(false);
     } catch (err) {
@@ -70,7 +70,7 @@ export default function DashboardPage() {
   const handleStatusChange = async (bookingId, status) => {
     try {
       const { data } = await api.put(`/bookings/${bookingId}/status`, { status });
-      setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: data.status } : b));
+      setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: data.data.status } : b));
     } catch (err) { alert(err.response?.data?.error || 'Failed to update'); }
   };
 

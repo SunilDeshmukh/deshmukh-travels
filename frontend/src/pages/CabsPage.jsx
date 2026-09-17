@@ -16,7 +16,7 @@ export default function CabsPage() {
 
   useEffect(() => {
     api.get('/cabs')
-      .then(res => setCabs(res.data))
+      .then(res => setCabs(res.data.data))
       .finally(() => setLoading(false));
   }, []);
 
