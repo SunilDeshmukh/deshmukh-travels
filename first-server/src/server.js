@@ -4,6 +4,7 @@ const cors = require('cors');
 require('dotenv').config();
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
+const { AppError } = require('./lib/AppError');
 
 
 // Step 2: Create your app instance
@@ -66,10 +67,40 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// ── Global error handler ──────────────────────
+// ── Global error handler ──────────────────────────────────────
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong' });
+
+  // Log every error with context
+  console.error({
+    message:    err.message,
+    statusCode: err.statusCode,
+    url:        req.url,
+    method:     req.method,
+    timestamp:  new Date().toISOString(),
+  });
+
+  // Known operational error — throw by our services intentionally
+  if (err.isOperational) {
+    return res.status(err.statusCode).json({
+      success: false,
+      error:   err.message,
+      code:    err.statusCode,
+    });
+  }
+
+  // Prisma unique constraint — e.g. duplicate email
+  if (err.code === 'P2002') {
+    return res.status(400).json({ success: false, error: 'This value already exists', code: 400 });
+  }
+
+  // Prisma record not found
+  if (err.code === 'P2025') {
+    return res.status(404).json({ success: false, error: 'Record not found', code: 404 });
+  }
+
+  // Unknown bug — never expose details to client
+  console.error('UNEXPECTED ERROR:', err);
+  res.status(500).json({ success: false, error: 'Something went wrong', code: 500 });
 });
 
 app.listen(PORT, () => {

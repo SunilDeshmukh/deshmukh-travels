@@ -1,75 +1,39 @@
-// ── Deshmukh Travels — Contact Requests Route ──────────────────
-const router = require('express').Router();
-const prisma = require('../lib/prisma');
+const router         = require('express').Router();
 const { protect, ownerOnly, customerOnly } = require('../middleware/auth');
+const contactService = require('../services/contactService');
+const { success, created } = require('../lib/response');
 
-// ── POST /api/contacts — customer contacts a cab owner ─────────
-router.post('/', protect, customerOnly, async (req, res) => {
-  const { message, tripDetails, customerId, ownerId, cabId } = req.body;
-  if (!message || !customerId || !ownerId || !cabId)
-    return res.status(400).json({ error: 'message, customerId, ownerId, cabId required' });
+// POST /api/contacts
+router.post('/', protect, customerOnly, async (req, res, next) => {
   try {
-    const contact = await prisma.contactRequest.create({
-      data: { message, tripDetails, customerId: +customerId, ownerId: +ownerId, cabId: +cabId },
-      include: { cab: { select: { name: true } }, owner: { select: { name: true, phone: true } } },
-    });
-    res.status(201).json(contact);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to send contact request' });
-  }
+    // customerId comes from token — not body — more secure
+    const contact = await contactService.sendContact(req.body, req.user.id);
+    created(res, contact, 'Contact request sent');
+  } catch (err) { next(err); }
 });
 
-
-// ── GET /api/contacts/received — owner's inbox ─────────────────
-router.get('/received', protect, ownerOnly, async (req, res) => {
-  const ownerId = req.user.id;   // ← from token
+// GET /api/contacts/received
+router.get('/received', protect, ownerOnly, async (req, res, next) => {
   try {
-    const contacts = await prisma.contactRequest.findMany({
-      where:   { ownerId },
-      include: { customer: { select: { name: true, phone: true, email: true } },
-                 cab: { select: { name: true, type: true } } },
-      orderBy: { createdAt: 'desc' },
-    });
-    res.json(contacts);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch received contacts' });
-  }
+    const contacts = await contactService.getReceivedContacts(req.user.id);
+    success(res, contacts, 'Received contacts fetched');
+  } catch (err) { next(err); }
 });
 
-
-// ── GET /api/contacts/sent — customer's sent inquiries ─────────
-router.get('/sent', protect, customerOnly, async (req, res) => {
-  const customerId = req.user.id; // ← from token
+// GET /api/contacts/sent
+router.get('/sent', protect, customerOnly, async (req, res, next) => {
   try {
-    const contacts = await prisma.contactRequest.findMany({
-      where:   { customerId },
-      include: { owner: { select: { name: true, phone: true } },
-                 cab:   { select: { name: true, type: true, imageUrl: true } } },
-      orderBy: { createdAt: 'desc' },
-    });
-    res.json(contacts);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch sent contacts' });
-  }
+    const contacts = await contactService.getSentContacts(req.user.id);
+    success(res, contacts, 'Sent contacts fetched');
+  } catch (err) { next(err); }
 });
 
-
-// ── PUT /api/contacts/:id/status — owner responds ──────────────
-router.put('/:id/status', async (req, res) => {
-  const { status } = req.body; // "accepted" | "rejected" | "pending"
-  const allowed = ['pending', 'accepted', 'rejected'];
-  if (!allowed.includes(status))
-    return res.status(400).json({ error: 'status must be pending|accepted|rejected' });
+// PUT /api/contacts/:id/status
+router.put('/:id/status', protect, ownerOnly, async (req, res, next) => {
   try {
-    const contact = await prisma.contactRequest.update({
-      where: { id: +req.params.id },
-      data:  { status },
-    });
-    res.json(contact);
-  } catch (err) {
-    if (err.code === 'P2025') return res.status(404).json({ error: 'Contact request not found' });
-    res.status(500).json({ error: 'Failed to update contact status' });
-  }
+    const contact = await contactService.updateContactStatus(req.params.id, req.body.status);
+    success(res, contact, 'Contact status updated');
+  } catch (err) { next(err); }
 });
 
 module.exports = router;
