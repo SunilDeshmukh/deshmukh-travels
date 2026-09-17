@@ -4,11 +4,17 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/server.js",
+    "test":  "jest --forceExit --detectOpenHandles",
     "dev": "nodemon src/server.js",
     "postinstall": "prisma skills sync || exit 0",
     "contract:emit": "prisma contract emit"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/__tests__/**/*.test.js"],
+    "testTimeout": 30000,
+    "setupFiles": ["<rootDir>/src/__tests__/setup.js"]
   },
   "keywords": [],
   "author": "",
@@ -31,7 +37,9 @@
   },
   "devDependencies": {
     "@types/node": "^26.4.0",
+    "jest": "^30.5.1",
     "nodemon": "^3.1.14",
-    "prisma": "^7.10.0"
+    "prisma": "^7.10.0",
+    "supertest": "^7.2.2"
   }
 }
