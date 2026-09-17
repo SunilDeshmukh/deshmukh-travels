@@ -1,5 +1,6 @@
 // Only job: business logic for cabs. No req/res here.
 const cabRepository          = require('../repositories/cabRepository');
+const cache                  = require('../lib/cache');
 const { notFound, badRequest } = require('../lib/AppError');
 
 // Build Prisma where object from query params
@@ -13,17 +14,51 @@ const buildFilters = ({ location, type, available }) => {
 };
 
 const getAllCabs = async (query) => {
-  return cabRepository.findMany(buildFilters(query));
+  // Build cache key from query params — different filters = different cache entries
+  const cacheKey = `cabs:list:${JSON.stringify(query)}`;
+
+  // Check cache first
+  const cached = await cache.get(cacheKey);
+  if (cached) {
+    console.log('Cache HIT:', cacheKey);
+    return cached;
+  }
+
+  console.log('Cache MISS:', cacheKey);
+
+  // Cache miss — query database
+  const cabs = await cabRepository.findMany(buildFilters(query));
+
+  // Store in cache
+  await cache.set(cacheKey, cabs, cache.TTL.CABS_LIST);
+
+  return cabs;
+
 };
 
 const getOwnerListings = async (ownerId) => {
+  // Owner listings are personal — don't cache
   return cabRepository.findByOwner(ownerId);
 };
 
 const getCabById = async (id) => {
+  const cacheKey = `cabs:detail:${id}`;
+
+  const cached = await cache.get(cacheKey);
+  if (cached) {
+    console.log('Cache HIT:', cacheKey);
+    return cached;
+  }
+
+  console.log('Cache MISS:', cacheKey);
+
   const cab = await cabRepository.findById(id);
   if (!cab) throw notFound('Cab not found');
+
+  await cache.set(cacheKey, cab, cache.TTL.CAB_DETAIL);
+
   return cab;
+
 };
 
 const createCab = async (body, ownerId) => {
@@ -34,15 +69,18 @@ const createCab = async (body, ownerId) => {
   if (!name || !type || !capacity || !pricePerKm || !location)
     throw badRequest('name, type, capacity, pricePerKm, location required');
 
-  return cabRepository.create({
-    name,
-    type,
+  const cab = await cabRepository.create({
+    name, type,
     capacity:   +capacity,
     pricePerKm: +pricePerKm,
-    location,
-    imageUrl,
-    ownerId,    // always from token — owner can't spoof another ownerId
+    location, imageUrl, ownerId,
   });
+
+  // New cab added — invalidate all cab list caches
+  await cache.invalidate('cabs:list:*');
+
+  return cab;
+
 };
 
 const updateCab = async (id, body) => {
@@ -51,21 +89,31 @@ const updateCab = async (id, body) => {
   const existing = await cabRepository.findById(id);
   if (!existing) throw notFound('Cab not found');
 
-  return cabRepository.update(id, {
-    name,
-    type,
+  const cab = await cabRepository.update(id, {
+    name, type,
     capacity:   capacity   ? +capacity   : undefined,
     pricePerKm: pricePerKm ? +pricePerKm : undefined,
-    location,
-    isAvailable,
-    imageUrl,
+    location, isAvailable, imageUrl,
   });
+
+  // Cab updated — clear its detail cache and all list caches
+  await cache.del(`cabs:detail:${id}`);
+  await cache.invalidate('cabs:list:*');
+
+  return cab;
+
 };
 
 const deleteCab = async (id) => {
   const existing = await cabRepository.findById(id);
   if (!existing) throw notFound('Cab not found');
-  return cabRepository.remove(id);
+
+  await cabRepository.remove(id);
+
+  // Cab deleted — clear its detail cache and all list caches
+  await cache.del(`cabs:detail:${id}`);
+  await cache.invalidate('cabs:list:*');
+  
 };
 
 module.exports = { getAllCabs, getOwnerListings, getCabById, createCab, updateCab, deleteCab };
